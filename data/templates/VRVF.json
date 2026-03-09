@@ -1,0 +1,126 @@
+{
+    "LE": {
+        "header": {
+            "crop_region": [0, 0, 860, 123],
+            "labels": [
+                "Patient",
+                "Sex",
+                "Date of Birth",
+                "Sex",
+                "Patient ID"
+            ]
+        },
+        "test_details": {
+            "crop_region": [0, 170, 1332, 203],
+            "labels": [
+                "Eye",
+                "Stimulus",
+                "Date",
+                "Fixation Losses",
+                "Strategy",
+                "Time",
+                "False Positive Errors",
+                "Pattern",
+                "Exam Duration",
+                "False Negative Errors",
+                "Fixation Target",
+                "Age"
+            ]
+        },
+        "threshold_map": {
+            "crop_region": [102, 359, 420, 430],
+            "labels": [
+                "ST1", "ST2", "SN2", "SN1", "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
+                "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6", "ST10", "ST11",
+                "ST12", "ST13", "SN14", "SN13", "SN12", "SN11", "SN10",
+                "IT10", "IT11", "IT12", "IT13", "IN14", "IN13", "IN12", "IN11", "IN10",
+                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7", "IN6",
+                "IT3", "IT4", "IT5", "IN5", "IN4", "IN3",
+                "IT1", "IT2", "IN2", "IN1"
+            ]
+        },
+        "total_deviation": {
+            "crop_region": [92, 830, 428, 430],
+            "labels": [
+                "ST1", "ST2", "SN2", "SN1",
+                "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
+                "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6",
+                "ST10", "ST11", "ST12", "SN14", "SN13", "SN12", "SN11", "SN10",
+                "IT10", "IT11", "IT12", "IN14", "IN13", "IN12", "IN11", "IN10",
+                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7", "IN6",
+                "IT3", "IT4", "IT5", "IN5", "IN4", "IN3",
+                "IT1", "IT2", "IN2", "IN1"
+            ]
+        },
+        "pattern_deviation": {
+            "crop_region": [625, 818, 432, 444],
+            "labels": [
+                "ST1", "ST2", "SN2", "SN1",
+                "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
+                "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6",
+                "ST10", "ST11", "ST12", "SN14", "SN13", "SN12", "SN11", "SN10",
+                "IT10", "IT11", "IT12", "IN14", "IN13", "IN12", "IN11", "IN10",
+                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7", "IN6",
+                "IT3", "IT4", "IT5", "IN5", "IN4", "IN3",
+                "IT1", "IT2", "IN2", "IN1"
+            ]
+        },
+        "vfi": {
+            "crop_region": [625, 818, 432, 444],
+            "labels": [
+                "VFI",
+                "MD",
+                "PSD"
+            ]
+        }
+    },
+    "RE": {
+        "header": {
+            "crop_region": [0, 0, 860, 123],
+            "labels": [
+                "Patient",
+                "Sex",
+                "Date of Birth",
+                "Sex",
+                "Patient ID"
+            ]
+        },
+        "test_details": {
+            "crop_region": [0, 170, 1332, 203],
+            "labels": [
+                "Eye",
+                "Stimulus",
+                "Date",
+                "Fixation Losses",
+                "Strategy",
+                "Time",
+                "False Positive Errors",
+                "Pattern",
+                "Exam Duration",
+                "False Negative Errors",
+                "Fixation Target",
+                "Age"
+            ]
+        },
+        "threshold_map": {
+            "crop_region": [102, 359, 420, 430],
+            "labels": []
+        },
+        "total_deviation": {
+            "crop_region": [92, 830, 428, 430],
+            "labels": []
+        },
+        "pattern_deviation": {
+            "crop_region": [625, 818, 432, 444],
+            "labels": []
+        },
+        "vfi": {
+            "crop_region": [625, 818, 432, 444],
+            "labels": [
+                "VFI",
+                "MD",
+                "PSD"
+            ]
+        }
+    }
+}
