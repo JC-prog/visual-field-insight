@@ -210,6 +210,8 @@ __marimo__/
 models/
 !models/.gitkeep
 data/input/*
-!ata/input/.gitkeep
+!data/input/.gitkeep
 data/output/*
 !data/output/.gitkeep
+asset/*
+test/debug_output
