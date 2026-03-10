@@ -51,6 +51,19 @@ Use this when you have one patient's files and want results right away.
 - Results are shown in a preview table below the download button
 - Nothing is saved to disk — the download is generated in memory
 
+### Debug Mode
+
+Enable **Debug mode** in the sidebar to inspect what the OCR pipeline is seeing for each region:
+
+1. Tick **Debug mode** in the sidebar before clicking **Run Extraction**
+2. After extraction completes, a **Debug — Crops & OCR Text** panel appears below the preview
+3. The panel has a tab per eye. For each template section:
+   - `"map"` and `"map_signed"` sections show two images side by side — the original crop and the gridline-removed version
+   - `"text"` sections (header, test details, summary) show the original crop only
+   - The raw OCR text read from that region is shown below the image(s)
+
+Use this when extraction values look wrong — it lets you verify whether the crop region is correctly positioned and what text the OCR detected before normalization.
+
 ---
 
 ## Batch Extract
@@ -149,7 +162,8 @@ Each template file contains two top-level sections — `LE` (left eye) and `RE` 
 | `type` | Used for | Behaviour |
 |---|---|---|
 | `"text"` | Header fields, test details, GHT/VFI summary | OCR runs directly on the cropped region |
-| `"map"` | Threshold map, total deviation, pattern deviation | Gridlines are automatically removed before OCR to improve number recognition |
+| `"map"` | Threshold map (unsigned values) | Gridlines removed before OCR; small residual blobs (tick marks, intersection dots) are also filtered out |
+| `"map_signed"` | Total deviation, pattern deviation (signed values) | Same gridline removal as `"map"` but blob filtering is skipped — minus signs are thin strokes that would otherwise be erased |
 
 > **Tip:** If values are consistently wrong for a particular field, the `crop_region` coordinates may need adjustment. Use an image viewer that shows pixel coordinates to find the correct region.
 

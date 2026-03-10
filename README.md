@@ -13,6 +13,7 @@ Supports:
 - **Single Extract** — Upload one or two HVF/VRVF files (PDF or image), run OCR, download results as CSV or JSON
 - **Batch Extract** — Process entire patient folders from `data/input/` and export a combined CSV to `data/output/`
 - **Template Editor** — View and edit OCR region templates directly in the browser
+- **Debug mode** — Sidebar toggle in Single Extract to inspect per-section crop images and raw OCR text
 - Offline-capable — models are bundled; no internet required on the target machine
 
 ---
@@ -41,6 +42,10 @@ visual-field-insight/
 │       ├── HVF.json        # HVF template (LE + RE)
 │       └── VRVF.json       # VRVF template (LE + RE)
 ├── models/                 # Bundled PaddleOCR models (not in repo)
+├── test/
+│   ├── evaluate.py         # OCR accuracy evaluation against ground truth files
+│   ├── run_eval.bat        # Run evaluation using dist Python
+│   └── <id>/               # Per-case folders with paired image + ground truth .md
 ├── scripts/
 │   └── build_portable.bat  # Portable Windows build script
 └── requirements.txt
@@ -106,6 +111,31 @@ data/input/
 3. Modify the JSON (crop regions or labels) in the text area
 4. Click **Save**
 
+### Evaluating OCR accuracy
+
+Place ground truth files alongside their paired images under `test/`:
+
+```
+test/
+  001/
+    001_HVF_LE.pdf
+    001_HVF_LE_ground_truth.md
+```
+
+Run via the dist Python (has all packages installed):
+
+```batch
+test\run_eval.bat
+```
+
+Or pass `--no-debug` to skip saving crop images:
+
+```batch
+test\run_eval.bat --no-debug
+```
+
+Per-section accuracy and MAE are printed to the console. Debug images (original crop, gridline-removed crop, PaddleOCR bounding-box overlay) are saved to `test\debug_output\` by default.
+
 ---
 
 ## Templates
@@ -134,8 +164,9 @@ Templates are JSON files in `data/templates/` with a top-level `"LE"` and `"RE"`
 
 | `type` | Behaviour |
 |---|---|
-| `"text"` | Raw OCR on the crop — used for key-value header fields |
-| `"map"` | Gridlines are removed before OCR — used for numeric visual field grids |
+| `"text"` | Raw OCR on the crop — used for key-value header fields. Each OCR block is a separate token, so values that contain commas (e.g. `III, White`, `Sep 08, 2025`) or colons (e.g. `11:33 AM`) are extracted intact. |
+| `"map"` | Gridlines removed before OCR; small residual artifacts (tick marks, intersection dots) filtered out. Used for unsigned maps (threshold values). Noisy merged tokens (e.g. `17..`, `32--`) are cleaned to their numeric value. |
+| `"map_signed"` | Same gridline removal as `"map"` but blob filtering is skipped. Used for signed deviation maps (`total_deviation`, `pattern_deviation`) where minus signs are thin strokes that would otherwise be incorrectly erased. |
 
 To add a new template type, create a new `.json` file in `data/templates/` following the same structure.
 
