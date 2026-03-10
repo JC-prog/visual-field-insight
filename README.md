@@ -27,8 +27,9 @@ visual-field-insight/
 ├── core/
 │   ├── ocr.py              # PaddleOCR singleton (offline-safe)
 │   ├── converter.py        # PDF → image via pymupdf
-│   ├── normalize.py        # OCR text → structured data
-│   └── pipeline.py         # extract(image, template, eye) → flat dict
+│   ├── normalize.py        # OCR text → structured data (type-driven)
+│   ├── pipeline.py         # extract(image, template, eye) → flat dict
+│   └── config.py           # Runtime path detection (dev vs dist)
 ├── views/
 │   ├── single_view.py      # Single-file extraction UI
 │   ├── batch_view.py       # Batch extraction UI
@@ -109,23 +110,32 @@ data/input/
 
 ## Templates
 
-Templates are JSON files in `data/templates/` with a top-level `"LE"` and `"RE"` key for each eye. Each section defines a crop region `[x, y, width, height]` and a list of field labels:
+Templates are JSON files in `data/templates/` with a top-level `"LE"` and `"RE"` key for each eye. Each section defines a crop region, an extraction type, and a list of field labels:
 
 ```json
 {
   "LE": {
     "header": {
       "crop_region": [0, 370, 1644, 297],
+      "type": "text",
       "labels": ["Fixation Monitor", "Date", "Age", ...]
     },
     "threshold_map": {
       "crop_region": [348, 612, 517, 507],
+      "type": "map",
       "labels": ["ST1", "ST2", ...]
     }
   },
   "RE": { ... }
 }
 ```
+
+**Section types:**
+
+| `type` | Behaviour |
+|---|---|
+| `"text"` | Raw OCR on the crop — used for key-value header fields |
+| `"map"` | Gridlines are removed before OCR — used for numeric visual field grids |
 
 To add a new template type, create a new `.json` file in `data/templates/` following the same structure.
 

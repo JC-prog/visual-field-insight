@@ -123,6 +123,7 @@ Templates define which regions of the report image to scan and what fields to ex
 Each template file contains two top-level sections — `LE` (left eye) and `RE` (right eye). Within each eye, sections like `header`, `threshold_map`, `total_deviation`, `pattern_deviation`, and `ght_vfi` each define:
 
 - **`crop_region`** — `[x, y, width, height]` in pixels, specifying which part of the image to scan
+- **`type`** — how the crop is processed before text is extracted (`"text"` or `"map"`)
 - **`labels`** — the ordered list of field names expected in that region
 
 ```json
@@ -130,16 +131,25 @@ Each template file contains two top-level sections — `LE` (left eye) and `RE` 
   "LE": {
     "header": {
       "crop_region": [0, 370, 1644, 297],
+      "type": "text",
       "labels": ["Fixation Monitor", "Date", "Age", ...]
     },
     "threshold_map": {
       "crop_region": [348, 612, 517, 507],
+      "type": "map",
       "labels": ["ST1", "ST2", ...]
     }
   },
   "RE": { ... }
 }
 ```
+
+**Section types:**
+
+| `type` | Used for | Behaviour |
+|---|---|---|
+| `"text"` | Header fields, test details, GHT/VFI summary | OCR runs directly on the cropped region |
+| `"map"` | Threshold map, total deviation, pattern deviation | Gridlines are automatically removed before OCR to improve number recognition |
 
 > **Tip:** If values are consistently wrong for a particular field, the `crop_region` coordinates may need adjustment. Use an image viewer that shows pixel coordinates to find the correct region.
 

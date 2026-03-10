@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.0] — 2026-03-10
+
+### Added
+- `"type"` field in template sections — `"text"` for key-value header fields, `"map"` for numeric visual field grids
+- Gridline removal pre-processing (`remove_gridlines()` in `core/pipeline.py`) applied automatically to all sections with `"type": "map"` before OCR, improving number extraction accuracy
+
+### Changed
+- `core/normalize.py` now routes normalization by the section's `"type"` field instead of matching hardcoded section names — any custom section name works as long as `"type"` is set correctly
+- `core/pipeline.py` applies gridline removal conditionally per section based on `"type"`
+
+### Removed
+- `utils/ocr.py` and the `utils/` directory — gridline removal logic consolidated into `core/pipeline.py`
+
+---
+
 ## [1.0.0] — 2026-03-10
 
 ### Added
