@@ -17,10 +17,14 @@ def _discover_templates() -> dict[str, Path]:
     return {p.stem: p for p in sorted(TEMPLATES_DIR.glob("*.json"))}
 
 
-def _process_file(uploaded_file, eye: str, template_path: Path) -> dict | None:
+def _process_file(uploaded_file, eye: str, template_path: Path, debug: bool = False):
     """
     Save uploaded file to a temp location, convert PDF→PNG if needed,
-    run extraction, clean up temp files. Returns normalized dict or None on failure.
+    run extraction, clean up temp files.
+
+    Returns:
+        debug=False: normalized dict or None on failure.
+        debug=True:  (dict, list[dict]) or (None, []) on failure.
     """
     from core.converter import convert_from_path
     from core.pipeline import extract
@@ -47,17 +51,25 @@ def _process_file(uploaded_file, eye: str, template_path: Path) -> dict | None:
         else:
             images_to_process.append(source_path)
 
-        results = []
-        for img_path in images_to_process:
-            data = extract(img_path, template_path, eye)
-            results.append(data)
-
-        # Merge multi-page results (take first page for single-page reports)
-        return results[0] if len(results) == 1 else results
+        if debug:
+            all_debug = []
+            results = []
+            for img_path in images_to_process:
+                data, dbg = extract(img_path, template_path, eye, debug=True)
+                results.append(data)
+                all_debug.extend(dbg)
+            data_out = results[0] if len(results) == 1 else results
+            return data_out, all_debug
+        else:
+            results = []
+            for img_path in images_to_process:
+                data = extract(img_path, template_path, eye)
+                results.append(data)
+            return results[0] if len(results) == 1 else results
 
     except Exception as e:
         st.error(f"Extraction failed for {uploaded_file.name}: {e}")
-        return None
+        return (None, []) if debug else None
 
     finally:
         for f in temp_files:
@@ -75,11 +87,13 @@ def single_view():
         st.error(f"No templates found in `{TEMPLATES_DIR}`. Add a `.json` template file first.")
         return
 
-    # --- Template selection (sidebar) ---
+    # --- Sidebar controls ---
     with st.sidebar:
         st.divider()
         template_name = st.selectbox("Template", list(templates.keys()))
         template_path = templates[template_name]
+        st.divider()
+        debug_mode = st.checkbox("Debug mode", value=False)
 
     # --- File uploaders ---
     le_col, re_col = st.columns(2)
@@ -111,23 +125,38 @@ def single_view():
             return
 
         results: dict[str, dict] = {}
+        debug_info: dict[str, list] = {}
 
         with st.spinner("Running OCR extraction..."):
             if le_file:
-                data = _process_file(le_file, "LE", template_path)
-                if data is not None:
-                    results["LE"] = data
+                if debug_mode:
+                    data, dbg = _process_file(le_file, "LE", template_path, debug=True)
+                    if data is not None:
+                        results["LE"] = data
+                        debug_info["LE"] = dbg
+                else:
+                    data = _process_file(le_file, "LE", template_path)
+                    if data is not None:
+                        results["LE"] = data
 
             if re_file:
-                data = _process_file(re_file, "RE", template_path)
-                if data is not None:
-                    results["RE"] = data
+                if debug_mode:
+                    data, dbg = _process_file(re_file, "RE", template_path, debug=True)
+                    if data is not None:
+                        results["RE"] = data
+                        debug_info["RE"] = dbg
+                else:
+                    data = _process_file(re_file, "RE", template_path)
+                    if data is not None:
+                        results["RE"] = data
 
         if results:
             st.session_state["single_results"] = results
+            st.session_state["single_debug"] = debug_info
             st.success(f"Extraction complete — {', '.join(results.keys())} eye(s) processed.")
         else:
             st.session_state.pop("single_results", None)
+            st.session_state.pop("single_debug", None)
 
     # --- Download section ---
     results = st.session_state.get("single_results")
@@ -167,3 +196,30 @@ def single_view():
 
     with st.expander("Preview"):
         st.dataframe(pd.DataFrame(records), use_container_width=True)
+
+    # --- Debug panel ---
+    debug_info = st.session_state.get("single_debug", {})
+    if debug_mode and debug_info:
+        st.divider()
+        with st.expander("Debug — Crops & OCR Text", expanded=True):
+            eyes_present = [e for e in ["LE", "RE"] if e in debug_info]
+            tabs = st.tabs(eyes_present)
+            for tab, eye in zip(tabs, eyes_present):
+                with tab:
+                    for entry in debug_info[eye]:
+                        section_label = f"`{entry['section']}` — *{entry['type']}*"
+                        st.markdown(f"**{section_label}**")
+
+                        if entry["type"] in ("map", "map_signed"):
+                            col_orig, col_proc = st.columns(2)
+                            with col_orig:
+                                st.caption("Original crop")
+                                st.image(entry["crop"][:, :, ::-1], use_container_width=True)
+                            with col_proc:
+                                st.caption("After gridline removal")
+                                st.image(entry["processed"][:, :, ::-1], use_container_width=True)
+                        else:
+                            st.image(entry["crop"][:, :, ::-1], use_container_width=True)
+
+                        st.code(entry["raw_text"] or "(no text detected)", language=None)
+                        st.divider()
