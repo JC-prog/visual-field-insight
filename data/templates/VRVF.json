@@ -2,6 +2,7 @@
     "LE": {
         "header": {
             "crop_region": [0, 0, 860, 123],
+            "type": "text",
             "labels": [
                 "Patient",
                 "Sex",
@@ -12,6 +13,7 @@
         },
         "test_details": {
             "crop_region": [0, 170, 1332, 203],
+            "type": "text",
             "labels": [
                 "Eye",
                 "Stimulus",
@@ -29,6 +31,7 @@
         },
         "threshold_map": {
             "crop_region": [102, 359, 420, 430],
+            "type": "map",
             "labels": [
                 "ST1", "ST2", "SN2", "SN1", "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
                 "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6", "ST10", "ST11",
@@ -41,6 +44,7 @@
         },
         "total_deviation": {
             "crop_region": [92, 830, 428, 430],
+            "type": "map",
             "labels": [
                 "ST1", "ST2", "SN2", "SN1",
                 "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
@@ -54,6 +58,7 @@
         },
         "pattern_deviation": {
             "crop_region": [625, 818, 432, 444],
+            "type": "map",
             "labels": [
                 "ST1", "ST2", "SN2", "SN1",
                 "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
@@ -67,6 +72,7 @@
         },
         "vfi": {
             "crop_region": [625, 818, 432, 444],
+            "type": "text",
             "labels": [
                 "VFI",
                 "MD",
@@ -77,6 +83,7 @@
     "RE": {
         "header": {
             "crop_region": [0, 0, 860, 123],
+            "type": "text",
             "labels": [
                 "Patient",
                 "Sex",
@@ -87,6 +94,7 @@
         },
         "test_details": {
             "crop_region": [0, 170, 1332, 203],
+            "type": "text",
             "labels": [
                 "Eye",
                 "Stimulus",
@@ -104,18 +112,22 @@
         },
         "threshold_map": {
             "crop_region": [102, 359, 420, 430],
+            "type": "map",
             "labels": []
         },
         "total_deviation": {
             "crop_region": [92, 830, 428, 430],
+            "type": "map",
             "labels": []
         },
         "pattern_deviation": {
             "crop_region": [625, 818, 432, 444],
+            "type": "map",
             "labels": []
         },
         "vfi": {
             "crop_region": [625, 818, 432, 444],
+            "type": "text",
             "labels": [
                 "VFI",
                 "MD",

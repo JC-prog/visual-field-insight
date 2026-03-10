@@ -78,12 +78,14 @@ def normalize_data(template: Dict[str, Any], extracted_data: Dict[str, Any]) -> 
             final_output[section_name] = raw_section_data
             continue
 
-        if section_name in ["header", "test_details", "ght_vfi", "vfi"]:
+        section_type = section_def.get("type", "text")
+
+        if section_type == "text":
             normalized_section = normalize_header_data(raw_section_data, template_labels)
             for key, value in normalized_section.items():
                 final_output[f"{section_name}_{key}"] = value
 
-        if section_name in ["threshold_map", "total_deviation", "pattern_deviation"]:
+        elif section_type == "map":
             normalized_section = normalize_map_data(raw_section_data, template_labels)
             for key, value in normalized_section.items():
                 final_output[f"{section_name}_{key}"] = value
