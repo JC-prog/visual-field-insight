@@ -12,7 +12,7 @@
             ]
         },
         "test_details": {
-            "crop_region": [0, 170, 1332, 203],
+            "crop_region": [0, 181, 1410, 190],
             "type": "text",
             "labels": [
                 "Eye",
@@ -30,12 +30,13 @@
             ]
         },
         "threshold_map": {
-            "crop_region": [102, 359, 420, 430],
+            "crop_region": [102, 359, 405, 430],
             "type": "map",
             "labels": [
-                "ST1", "ST2", "SN2", "SN1", "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
-                "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6", "ST10", "ST11",
-                "ST12", "ST13", "SN14", "SN13", "SN12", "SN11", "SN10",
+                "ST1", "ST2", "SN2", "SN1",
+                "ST3", "ST4", "ST5", "SN5", "SN4", "SN3", 
+                "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6",
+                "ST10", "ST11", "ST12", "ST13", "SN14", "SN13", "SN12", "SN11", "SN10",
                 "IT10", "IT11", "IT12", "IT13", "IN14", "IN13", "IN12", "IN11", "IN10",
                 "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7", "IN6",
                 "IT3", "IT4", "IT5", "IN5", "IN4", "IN3",
@@ -43,35 +44,35 @@
             ]
         },
         "total_deviation": {
-            "crop_region": [92, 830, 428, 430],
-            "type": "map",
+            "crop_region": [97, 844, 413, 406],
+            "type": "map_signed",
             "labels": [
                 "ST1", "ST2", "SN2", "SN1",
                 "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
                 "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6",
                 "ST10", "ST11", "ST12", "SN14", "SN13", "SN12", "SN11", "SN10",
                 "IT10", "IT11", "IT12", "IN14", "IN13", "IN12", "IN11", "IN10",
-                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7", "IN6",
-                "IT3", "IT4", "IT5", "IN5", "IN4", "IN3",
+                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7","IN6",
+                "IT3","IT4", "IT5", "IN5", "IN4", "IN3",
                 "IT1", "IT2", "IN2", "IN1"
             ]
         },
         "pattern_deviation": {
-            "crop_region": [625, 818, 432, 444],
-            "type": "map",
+            "crop_region": [634, 841, 403, 408],
+            "type": "map_signed",
             "labels": [
                 "ST1", "ST2", "SN2", "SN1",
                 "ST3", "ST4", "ST5", "SN5", "SN4", "SN3",
                 "ST6", "ST7", "ST8", "ST9", "SN9", "SN8", "SN7", "SN6",
                 "ST10", "ST11", "ST12", "SN14", "SN13", "SN12", "SN11", "SN10",
                 "IT10", "IT11", "IT12", "IN14", "IN13", "IN12", "IN11", "IN10",
-                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7", "IN6",
-                "IT3", "IT4", "IT5", "IN5", "IN4", "IN3",
+                "IT6", "IT7", "IT8", "IT9", "IN9", "IN8", "IN7","IN6",
+                "IT3","IT4", "IT5", "IN5", "IN4", "IN3",
                 "IT1", "IT2", "IN2", "IN1"
             ]
         },
         "vfi": {
-            "crop_region": [625, 818, 432, 444],
+            "crop_region": [1098, 976, 195, 162],
             "type": "text",
             "labels": [
                 "VFI",
@@ -93,7 +94,7 @@
             ]
         },
         "test_details": {
-            "crop_region": [0, 170, 1332, 203],
+            "crop_region": [0, 181, 1410, 190],
             "type": "text",
             "labels": [
                 "Eye",
@@ -111,22 +112,49 @@
             ]
         },
         "threshold_map": {
-            "crop_region": [102, 359, 420, 430],
+            "crop_region": [102, 359, 405, 430],
             "type": "map",
-            "labels": []
+            "labels": [
+                "SN1", "SN2", "ST2", "ST1",
+                "SN3", "SN4", "SN5", "ST5", "ST4", "ST3",
+                "SN6", "SN7", "SN8", "SN9", "ST9", "ST8", "ST7", "ST6",
+                "SN10", "SN11", "SN12", "SN13", "SN14", "ST13", "ST12", "ST11", "ST10",
+                "IN10", "IN11", "IN12", "IN13", "IN14", "IT13", "IT12", "IT11", "IT10",
+                "IN6", "IN7", "IN8", "IN9", "IT9", "IT8", "IT7", "IT6",
+                "IN3", "IN4", "IN5", "IT5", "IT4", "IT3",
+                "IN1", "IN2", "IT2", "IT1"
+            ]
         },
         "total_deviation": {
-            "crop_region": [92, 830, 428, 430],
-            "type": "map",
-            "labels": []
+            "crop_region": [97, 844, 413, 406],
+            "type": "map_signed",
+            "labels": [
+                "SN1", "SN2", "ST2", "ST1",
+                "SN3", "SN4", "SN5", "ST5", "ST4", "ST3",
+                "SN6", "SN7", "SN8", "SN9", "ST9", "ST8", "ST7", "ST6",
+                "SN10", "SN11", "SN12", "SN13", "SN14", "ST12", "ST11", "ST10",
+                "IN10", "IN11", "IN12", "IN13", "IN14", "IT12", "IT11", "IT10",
+                "IN6", "IN7", "IN8", "IN9", "IT9", "IT8", "IT7", "IT6",
+                "IN3", "IN4", "IN5", "IT5", "IT4", "IT3",
+                "IN1", "IN2", "IT2", "IT1"
+            ]
         },
         "pattern_deviation": {
-            "crop_region": [625, 818, 432, 444],
-            "type": "map",
-            "labels": []
+            "crop_region": [634, 841, 403, 408],
+            "type": "map_signed",
+            "labels": [
+                "SN1", "SN2", "ST2", "ST1",
+                "SN3", "SN4", "SN5", "ST5", "ST4", "ST3",
+                "SN6", "SN7", "SN8", "SN9", "ST9", "ST8", "ST7", "ST6",
+                "SN10", "SN11", "SN12", "SN13", "SN14", "ST12", "ST11", "ST10",
+                "IN10", "IN11", "IN12", "IN13", "IN14", "IT12", "IT11", "IT10",
+                "IN6", "IN7", "IN8", "IN9", "IT9", "IT8", "IT7", "IT6",
+                "IN3", "IN4", "IN5", "IT5", "IT4", "IT3",
+                "IN1", "IN2", "IT2", "IT1"
+            ]
         },
         "vfi": {
-            "crop_region": [625, 818, 432, 444],
+            "crop_region": [1098, 976, 195, 162],
             "type": "text",
             "labels": [
                 "VFI",

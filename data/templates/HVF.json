@@ -28,12 +28,7 @@
             ]
         },
         "threshold_map": {
-            "crop_region": [
-                542,
-                953,
-                773,
-                684
-            ],
+            "crop_region": [463, 932, 899, 688],
             "type": "map",
             "labels": [
                 "ST1",
@@ -93,13 +88,8 @@
             ]
         },
         "total_deviation": {
-            "crop_region": [
-                262,
-                1608,
-                548,
-                532
-            ],
-            "type": "map",
+            "crop_region": [155,1608,682,546],
+            "type": "map_signed",
             "labels": [
                 "ST1",
                 "ST2",
@@ -156,13 +146,8 @@
             ]
         },
         "pattern_deviation": {
-            "crop_region": [
-                1022,
-                1612,
-                551,
-                532
-            ],
-            "type": "map",
+            "crop_region": [1006,1593,639,584],
+            "type": "map_signed",
             "labels": [
                 "ST1",
                 "ST2",
@@ -263,16 +248,11 @@
             ]
         },
         "threshold_map": {
-            "crop_region": [
-                542,
-                953,
-                773,
-                684
-            ],
+            "crop_region": [463, 932, 899, 688],
             "type": "map",
             "labels": [
                 "SN1",
-                "SN1",
+                "SN2",
                 "ST2",
                 "ST1",
                 "SN3",
@@ -328,16 +308,11 @@
             ]
         },
         "total_deviation": {
-            "crop_region": [
-                262,
-                1608,
-                548,
-                532
-            ],
-            "type": "map",
+            "crop_region": [155,1608,682,546],
+            "type": "map_signed",
             "labels": [
                 "SN1",
-                "SN1",
+                "SN2",
                 "ST2",
                 "ST1",
                 "SN3",
@@ -350,6 +325,7 @@
                 "SN7",
                 "SN8",
                 "SN9",
+                "ST9",
                 "ST8",
                 "ST7",
                 "ST6",
@@ -390,16 +366,11 @@
             ]
         },
         "pattern_deviation": {
-            "crop_region": [
-                1022,
-                1612,
-                551,
-                532
-            ],
-            "type": "map",
+            "crop_region": [1006,1593,639,584],
+            "type": "map_signed",
             "labels": [
                 "SN1",
-                "SN1",
+                "SN2",
                 "ST2",
                 "ST1",
                 "SN3",
@@ -412,6 +383,7 @@
                 "SN7",
                 "SN8",
                 "SN9",
+                "ST9",
                 "ST8",
                 "ST7",
                 "ST6",
