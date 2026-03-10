@@ -5,24 +5,32 @@ from typing import Any, Dict, List
 def normalize_header_data(raw_data: str, template_labels: List[str]) -> Dict[str, str]:
     """
     Parse key-value pairs from raw OCR text (e.g. header/test_details sections).
-    Matches OCR tokens to template labels and extracts the value that follows each label.
+
+    Expects raw_data to have OCR blocks joined by newlines (one block per line).
+    Each block is checked against template_labels after stripping a trailing colon,
+    so "Date:" matches the label "Date". The token immediately following a matched
+    label is taken as its value, unless it is itself a label.
+
+    Values that contain commas (e.g. "III, White", "Sep 08, 2025") or colons
+    (e.g. "11:33 AM", "03:57") are preserved intact because newline splitting
+    does not disturb internal punctuation.
     """
+    label_set = set(template_labels)
+    tokens = [t.strip() for t in raw_data.split('\n') if t.strip()]
+
     normalized = {}
-
-    temp_data = raw_data.replace(':,', ';').replace(':', ';').replace(',', ';')
-    parts = [p.strip() for p in temp_data.split(';') if p.strip()]
-
-    for i in range(len(parts)):
-        current_part = parts[i]
-        if current_part in template_labels:
-            key = current_part
-            value = None
-            if i + 1 < len(parts):
-                next_part = parts[i + 1]
-                if next_part not in template_labels:
-                    value = next_part
-                    parts[i + 1] = ""
-            normalized[key] = value if value is not None else ""
+    i = 0
+    while i < len(tokens):
+        candidate = tokens[i].rstrip(':').strip()
+        if candidate in label_set:
+            if i + 1 < len(tokens) and tokens[i + 1].rstrip(':').strip() not in label_set:
+                normalized[candidate] = tokens[i + 1]
+                i += 2
+            else:
+                normalized[candidate] = ""
+                i += 1
+        else:
+            i += 1
 
     for label in template_labels:
         if label not in normalized:
@@ -34,7 +42,8 @@ def normalize_header_data(raw_data: str, template_labels: List[str]) -> Dict[str
 def normalize_map_data(raw_data: str, template_labels: List[str]) -> Dict[str, str]:
     """
     Extract signed integer values from raw OCR text and map them sequentially
-    to template labels. Handles common OCR noise (merged values, trailing dots, pipes).
+    to template labels. Handles common OCR noise (merged values, trailing dots/dashes,
+    pipes, non-numeric artifacts).
     """
     normalized_input = raw_data.replace('|', ' ')
     initial_parts = [p.strip() for p in normalized_input.split(',')]
@@ -46,14 +55,16 @@ def normalize_map_data(raw_data: str, template_labels: List[str]) -> Dict[str, s
         elif part:
             parts.append(part)
 
-    # Matches: "-5", "31.", "+2", "<0", "< -1"
-    SIGNED_INTEGER_PATTERN = re.compile(r'^\s*(<?\s*[+-]?\d+)\.?\s*$')
+    # Extract the numeric content from each token using search rather than fullmatch.
+    # This handles noisy tokens like "17.." → "17" and "32--" → "32" that would fail
+    # a strict fullmatch. The <\s*-?\d+ branch handles "<0" and "< -1" style values.
+    EXTRACT_NUMERIC = re.compile(r'<\s*-?\d+|-?\d+')
 
     numeric_values = []
     for part in parts:
-        match = SIGNED_INTEGER_PATTERN.match(part)
+        match = EXTRACT_NUMERIC.search(part)
         if match:
-            cleaned_value = match.group(1).replace(" ", "")
+            cleaned_value = match.group(0).replace(" ", "")
             numeric_values.append(cleaned_value)
 
     normalized: Dict[str, str] = {}
@@ -85,7 +96,10 @@ def normalize_data(template: Dict[str, Any], extracted_data: Dict[str, Any]) -> 
             for key, value in normalized_section.items():
                 final_output[f"{section_name}_{key}"] = value
 
-        elif section_type == "map":
+        elif section_type in ("map", "map_signed"):
+            # "map"        — unsigned values (threshold map); blob filter applied upstream
+            # "map_signed" — signed values (deviation maps); blob filter skipped upstream
+            # Both use the same numeric extraction logic here
             normalized_section = normalize_map_data(raw_section_data, template_labels)
             for key, value in normalized_section.items():
                 final_output[f"{section_name}_{key}"] = value
