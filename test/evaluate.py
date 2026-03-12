@@ -1,22 +1,35 @@
 #!/usr/bin/env python3
 """
-Evaluate OCR accuracy against ground truth files in the test/ directory.
+Evaluate OCR accuracy against ground truth files in test_data/.
 
 Usage:
-    python test/evaluate.py
+    python evaluate.py
 
-Auto-discovers all *_ground_truth.md files, matches them to the
-corresponding image/PDF, runs the pipeline, and reports per-section
-accuracy and MAE (for numeric map sections).
+Auto-discovers all *_GT.csv files, matches them to the corresponding
+image/PDF, runs the pipeline, and reports per-section accuracy and MAE
+(for numeric map sections).
 
 Ground truth file naming convention:
-    <id>_<TEMPLATE>_<EYE>_ground_truth.md
-    e.g.  001_HVF_LE_ground_truth.md  →  001_HVF_LE.pdf  /  001_HVF_LE.jpg
+    <id>_<TEMPLATE>_<EYE>_GT.csv
+    e.g.  001_HVF_LE_GT.csv  →  001_HVF_LE.pdf  /  001_HVF_LE.jpg
+
+CSV format:
+    file_name,<filename>
+
+    crop_section,<section_key>
+    Label,Expected
+    <label>,<value>
+    ...
+
+Results are written to test/results.md after each run.
+Debug images are saved to <case_folder>/debug_output/ per case.
 """
+import csv
 import json
 import re
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 # Ensure UTF-8 output on Windows (box-drawing characters in the report)
@@ -24,7 +37,6 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 import cv2
-import numpy as np
 from PIL import Image
 
 # ── Project root ──────────────────────────────────────────────────────────────
@@ -34,17 +46,6 @@ sys.path.insert(0, str(ROOT))
 from core.pipeline import extract          # noqa: E402
 from core.converter import convert_from_path  # noqa: E402
 from core.config import TEMPLATES_DIR     # noqa: E402
-
-# ── Section heading → template key ───────────────────────────────────────────
-SECTION_HEADING_MAP = {
-    "Header":            "header",
-    "Test Details":      "test_details",
-    "Threshold Map":     "threshold_map",
-    "Total Deviation":   "total_deviation",
-    "Pattern Deviation": "pattern_deviation",
-    "GHT/VFI":           "ght_vfi",
-    "VFI":               "vfi",
-}
 
 EXTRACT_NUMERIC = re.compile(r"<\s*-?\d+|-?\d+")
 
@@ -74,10 +75,9 @@ def _detect_template(filename: str) -> Path | None:
 
 
 def _find_image(gt_path: Path) -> Path | None:
-    """Locate the image/PDF file that pairs with a ground truth file."""
-    # Strip '_ground_truth' suffix, then try every supported image extension
-    stem = gt_path.stem  # e.g. '001_HVF_LE_ground_truth'
-    base = re.sub(r"_ground_truth$", "", stem, flags=re.IGNORECASE)
+    """Locate the image/PDF file that pairs with a ground truth CSV file."""
+    stem = gt_path.stem  # e.g. '001_HVF_LE_GT'
+    base = re.sub(r"_GT$", "", stem, flags=re.IGNORECASE)
     for suffix in IMAGE_SUFFIXES:
         candidate = gt_path.parent / (base + suffix)
         if candidate.exists():
@@ -96,71 +96,58 @@ def _pil_to_bgr_path(pil_img: Image.Image) -> Path:
 
 def parse_ground_truth(gt_path: Path, template_full: dict, eye: str) -> dict:
     """
-    Parse a ground truth .md file into a flat dict matching the OCR output.
+    Parse a ground truth CSV file into a flat dict matching the OCR output.
 
-    Keys are formatted as  ``section_Label``  (e.g. ``header_Stimulus``,
-    ``threshold_map_ST1``).  Labels not listed in the template or sections
-    not present in the file are silently skipped.
+    Keys are formatted as ``section_Label`` (e.g. ``header_Date``,
+    ``threshold_map_ST1``).  Labels not present in the template are skipped.
     """
     template_eye = template_full[eye]
-    content = gt_path.read_text(encoding="utf-8")
-    lines = content.splitlines()
-
-    # ── Split content into sections ──────────────────────────────────────────
-    sections_raw: dict[str, list[str]] = {}
-    current_section: str | None = None
-    current_lines: list[str] = []
-
-    for line in lines:
-        stripped = line.strip()
-        if stripped in SECTION_HEADING_MAP:
-            if current_section is not None:
-                sections_raw[SECTION_HEADING_MAP[current_section]] = current_lines
-            current_section = stripped
-            current_lines = []
-        elif current_section is not None:
-            current_lines.append(line)
-    if current_section is not None:
-        sections_raw[SECTION_HEADING_MAP[current_section]] = current_lines
-
-    # ── Parse each section ───────────────────────────────────────────────────
     result: dict[str, str] = {}
 
-    for section_name, raw_lines in sections_raw.items():
-        if section_name not in template_eye:
+    with gt_path.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+
+    current_section: str | None = None
+    in_data = False
+    section_cache: dict[str, tuple[set, str]] = {}
+
+    for row in rows:
+        col0 = row[0].strip() if row else ""
+        col1 = row[1].strip() if len(row) > 1 else ""
+
+        if not col0:
+            in_data = False
             continue
-        section_def = template_eye[section_name]
-        labels: list[str] = section_def.get("labels", [])
-        section_type: str = section_def.get("type", "text")
-        label_set = set(labels)
 
-        if section_type == "text":
-            # Mirror normalize_header_data: strip trailing ':', match labels,
-            # take the immediately following non-label token as the value.
-            tokens = [l.strip() for l in raw_lines if l.strip()]
-            i = 0
-            while i < len(tokens):
-                candidate = tokens[i].rstrip(":").strip()
-                if candidate in label_set:
-                    if (
-                        i + 1 < len(tokens)
-                        and tokens[i + 1].rstrip(":").strip() not in label_set
-                    ):
-                        result[f"{section_name}_{candidate}"] = tokens[i + 1]
-                        i += 2
-                    else:
-                        result[f"{section_name}_{candidate}"] = ""
-                        i += 1
-                else:
-                    i += 1
+        if col0 == "file_name":
+            continue
+        elif col0 == "crop_section":
+            current_section = col1
+            in_data = False
+        elif col0 == "Label" and col1 == "Expected":
+            in_data = True
+        elif in_data and current_section:
+            if current_section not in template_eye:
+                continue
 
-        else:  # "map" or "map_signed"
-            # Extract all numeric tokens in order — same as normalize_map_data.
-            text = " ".join(raw_lines)
-            matches = EXTRACT_NUMERIC.findall(text)
-            values = [m.replace(" ", "") for m in matches]
-            for idx, label in enumerate(labels):
-                result[f"{section_name}_{label}"] = values[idx] if idx < len(values) else ""
+            if current_section not in section_cache:
+                sec_def = template_eye[current_section]
+                section_cache[current_section] = (
+                    set(sec_def.get("labels", [])),
+                    sec_def.get("type", "text"),
+                )
+            label_set, section_type = section_cache[current_section]
+
+            if col0 not in label_set:
+                continue
+
+            if section_type in ("map", "map_signed"):
+                m = EXTRACT_NUMERIC.search(col1)
+                if m:
+                    result[f"{current_section}_{col0}"] = m.group(0).replace(" ", "")
+                # no numeric value → omit key so the label is skipped in scoring
+            else:
+                result[f"{current_section}_{col0}"] = col1
 
     return result
 
@@ -168,7 +155,6 @@ def parse_ground_truth(gt_path: Path, template_full: dict, eye: str) -> dict:
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 def _to_int(s: str) -> int | None:
-    """Convert a value string (including '<0') to int, or None if unparseable."""
     s = s.strip()
     if not s:
         return None
@@ -183,14 +169,6 @@ def compute_metrics(
     gt_result: dict,
     template_eye: dict,
 ) -> dict:
-    """
-    Compare OCR output against ground truth and return structured metrics.
-
-    Returns
-    -------
-    dict with keys:
-        correct, total, accuracy, mae, by_section
-    """
     total_correct = 0
     total_compared = 0
     total_mae_sum = 0.0
@@ -210,7 +188,7 @@ def compute_metrics(
             key = f"{section_name}_{label}"
             gt_val = gt_result.get(key)
             if gt_val is None:
-                continue  # absent from ground truth — skip
+                continue
 
             ocr_val = ocr_result.get(key, "")
             gt_norm = gt_val.strip()
@@ -219,14 +197,12 @@ def compute_metrics(
             compared += 1
             total_compared += 1
 
-            match = gt_norm == ocr_norm
-            if match:
+            if gt_norm == ocr_norm:
                 correct += 1
                 total_correct += 1
             else:
                 errors.append((label, gt_norm, ocr_norm))
 
-            # MAE — only for map sections, and only when both values are numeric
             if section_type in ("map", "map_signed"):
                 gt_num = _to_int(gt_norm)
                 ocr_num = _to_int(ocr_norm)
@@ -255,14 +231,14 @@ def compute_metrics(
     }
 
 
-# ── Reporting ─────────────────────────────────────────────────────────────────
+# ── Console reporting ─────────────────────────────────────────────────────────
 
 def _fmt_pct(val: float | None) -> str:
-    return f"{val * 100:.1f}%" if val is not None else "  —  "
+    return f"{val * 100:.1f}%" if val is not None else "—"
 
 
 def _fmt_mae(val: float | None) -> str:
-    return f"{val:.2f}" if val is not None else " — "
+    return f"{val:.2f}" if val is not None else "—"
 
 
 def _bar(correct: int, total: int, width: int = 20) -> str:
@@ -286,7 +262,6 @@ def print_report(
     print(f"  Template : {template_name}   Eye : {eye}")
     print(SEP)
 
-    # Section table
     print(f"  {'Section':<22} {'Acc':>7}  {'Correct/Total':>14}  {'MAE':>6}  {'Progress'}")
     print(f"  {'─'*22} {'─'*7}  {'─'*14}  {'─'*6}  {'─'*20}")
 
@@ -306,11 +281,11 @@ def print_report(
     )
 
     if show_errors:
-        all_errors = []
-        for sec_name, sec in metrics["by_section"].items():
-            for label, expected, got in sec["errors"]:
-                all_errors.append((sec_name, label, expected, got))
-
+        all_errors = [
+            (sec_name, label, expected, got)
+            for sec_name, sec in metrics["by_section"].items()
+            for label, expected, got in sec["errors"]
+        ]
         if all_errors:
             print(f"\n  Errors (first {max_errors} shown):")
             for sec_name, label, expected, got in all_errors[:max_errors]:
@@ -321,41 +296,86 @@ def print_report(
     print(SEP)
 
 
+# ── Markdown reporting ────────────────────────────────────────────────────────
+
+def format_report_md(
+    file_name: str,
+    template_name: str,
+    eye: str,
+    metrics: dict,
+    max_errors: int = 10,
+) -> str:
+    lines: list[str] = []
+    acc_overall = _fmt_pct(metrics["accuracy"])
+    lines.append(f"## {file_name} — {template_name} / {eye}\n")
+    lines.append(f"| Section | Accuracy | Correct/Total | MAE |")
+    lines.append(f"|---|---:|---:|---:|")
+
+    for sec_name, sec in metrics["by_section"].items():
+        lines.append(
+            f"| {sec_name} | {_fmt_pct(sec['accuracy'])} "
+            f"| {sec['correct']}/{sec['total']} "
+            f"| {_fmt_mae(sec['mae'])} |"
+        )
+
+    lines.append(
+        f"| **OVERALL** | **{acc_overall}** "
+        f"| **{metrics['correct']}/{metrics['total']}** "
+        f"| **{_fmt_mae(metrics['mae'])}** |"
+    )
+
+    all_errors = [
+        (sec_name, label, expected, got)
+        for sec_name, sec in metrics["by_section"].items()
+        for label, expected, got in sec["errors"]
+    ]
+    if all_errors:
+        lines.append(f"\n**Errors** ({len(all_errors)} total):\n")
+        for sec_name, label, expected, got in all_errors[:max_errors]:
+            lines.append(f"- `{sec_name}.{label}` — expected `{expected}` got `{got}`")
+        if len(all_errors) > max_errors:
+            lines.append(f"- _… {len(all_errors) - max_errors} more errors not shown_")
+    else:
+        lines.append("\n_No errors — perfect match!_")
+
+    return "\n".join(lines)
+
+
 # ── Runner ────────────────────────────────────────────────────────────────────
 
-def evaluate_file(gt_path: Path, save_debug_dir: Path | None = None) -> dict | None:
+def evaluate_file(gt_path: Path, save_debug: bool = True) -> tuple[dict | None, str | None]:
     """
-    Run a single ground-truth evaluation.  Returns the metrics dict or None
-    if the file can't be processed (missing image, missing template, etc.).
+    Run a single ground-truth evaluation.
+
+    Returns (metrics, markdown_report) or (None, None) if the file can't
+    be processed (missing image, missing template, etc.).
+
+    Debug images are saved to <gt_path.parent>/debug_output/ when save_debug=True.
     """
-    # ── Locate the paired image ──────────────────────────────────────────────
     img_path = _find_image(gt_path)
     if img_path is None:
         print(f"  [SKIP] {gt_path.name}: no paired image found")
-        return None
+        return None, None
 
-    # ── Detect eye and template ──────────────────────────────────────────────
     eye = _detect_eye(img_path.name)
     if eye is None:
         print(f"  [SKIP] {img_path.name}: cannot detect eye (no _LE/_RE/_OS/_OD)")
-        return None
+        return None, None
 
     template_path = _detect_template(img_path.name)
     if template_path is None:
         print(f"  [SKIP] {img_path.name}: no matching template in {TEMPLATES_DIR}")
-        return None
+        return None, None
 
     with template_path.open(encoding="utf-8") as f:
         template_full = json.load(f)
 
     if eye not in template_full:
         print(f"  [SKIP] {img_path.name}: eye '{eye}' not in template {template_path.name}")
-        return None
+        return None, None
 
-    # ── Parse ground truth ───────────────────────────────────────────────────
     gt_result = parse_ground_truth(gt_path, template_full, eye)
 
-    # ── Run OCR pipeline ─────────────────────────────────────────────────────
     tmp_paths = []
     try:
         if img_path.suffix.lower() == ".pdf":
@@ -374,22 +394,23 @@ def evaluate_file(gt_path: Path, save_debug_dir: Path | None = None) -> dict | N
             except OSError:
                 pass
 
-    # ── Save debug images if requested ───────────────────────────────────────
-    if save_debug_dir is not None:
-        save_debug_dir.mkdir(parents=True, exist_ok=True)
-        stem = img_path.stem  # e.g. '001_HVF_LE'
+    if save_debug:
+        debug_dir = gt_path.parent / "debug_output"
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        # Write a .gitignore so debug images are never committed
+        gi = debug_dir / ".gitignore"
+        if not gi.exists():
+            gi.write_text("*\n!.gitignore\n", encoding="utf-8")
+        stem = img_path.stem
         for entry in debug_entries:
             sec = entry["section"]
-            # Raw crop and gridline-removed crop
-            cv2.imwrite(str(save_debug_dir / f"{stem}_{sec}_before.png"), entry["crop"])
-            cv2.imwrite(str(save_debug_dir / f"{stem}_{sec}_after.png"),  entry["processed"])
-            # PaddleOCR annotated result (bounding boxes + recognised text)
+            cv2.imwrite(str(debug_dir / f"{stem}_{sec}_before.png"), entry["crop"])
+            cv2.imwrite(str(debug_dir / f"{stem}_{sec}_after.png"),  entry["processed"])
             ocr_res = entry.get("ocr_result")
             if ocr_res is not None:
-                ocr_res.save_to_img(str(save_debug_dir / f"{stem}_{sec}_ocr.png"))
-        print(f"  Debug images saved to: {save_debug_dir}/")
+                ocr_res.save_to_img(str(debug_dir / f"{stem}_{sec}_ocr.png"))
+        print(f"  Debug images saved to: {debug_dir}/")
 
-    # ── Compute metrics ──────────────────────────────────────────────────────
     metrics = compute_metrics(ocr_result, gt_result, template_full[eye])
 
     print_report(
@@ -399,46 +420,49 @@ def evaluate_file(gt_path: Path, save_debug_dir: Path | None = None) -> dict | N
         metrics=metrics,
     )
 
-    return metrics
+    md = format_report_md(
+        file_name=img_path.name,
+        template_name=template_path.stem,
+        eye=eye,
+        metrics=metrics,
+    )
+
+    return metrics, md
 
 
 def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Evaluate OCR accuracy against ground truth files.")
-    _default_debug = Path(__file__).resolve().parent / "debug_output"
-    parser.add_argument(
-        "--save-debug",
-        metavar="DIR",
-        default=str(_default_debug),
-        help=f"Save before/after/OCR-annotated images per section (default: {_default_debug}).",
-    )
     parser.add_argument(
         "--no-debug",
         action="store_true",
-        help="Disable saving debug images.",
+        help="Disable saving debug images to <case>/debug_output/.",
     )
     args = parser.parse_args()
 
-    save_debug_dir = None if args.no_debug else Path(args.save_debug)
-
     test_dir = Path(__file__).resolve().parent
+    data_dir = test_dir.parent / "test_data"
 
-    gt_files = sorted(test_dir.rglob("*_ground_truth.md"))
+    gt_files = sorted(data_dir.rglob("*_GT.csv"))
     if not gt_files:
-        print(f"No ground truth files found under {test_dir}")
+        print(f"No ground truth files found under {data_dir}")
         sys.exit(1)
 
-    print(f"Found {len(gt_files)} ground truth file(s) in {test_dir}")
+    print(f"Found {len(gt_files)} ground truth file(s) in {data_dir}")
 
     all_metrics: list[dict] = []
-    for gt_path in gt_files:
-        m = evaluate_file(gt_path, save_debug_dir=save_debug_dir)
-        if m:
-            all_metrics.append(m)
+    all_md: list[str] = []
 
+    for gt_path in gt_files:
+        m, md = evaluate_file(gt_path, save_debug=not args.no_debug)
+        if m is not None:
+            all_metrics.append(m)
+            all_md.append(md)
+
+    # ── Aggregate summary ─────────────────────────────────────────────────────
+    aggregate_md = ""
     if len(all_metrics) > 1:
-        # Aggregate summary
         total_correct = sum(m["correct"] for m in all_metrics)
         total_total = sum(m["total"] for m in all_metrics)
         mae_vals = [m["mae"] for m in all_metrics if m["mae"] is not None]
@@ -452,6 +476,27 @@ def main() -> None:
               f"  ({total_correct}/{total_total})")
         print(f"  Mean MAE (maps) : {_fmt_mae(avg_mae)}")
         print("═" * 72)
+
+        aggregate_md = "\n".join([
+            "## Aggregate Summary\n",
+            f"| Metric | Value |",
+            f"|---|---|",
+            f"| Files evaluated | {len(all_metrics)} |",
+            f"| Overall accuracy | {_fmt_pct(total_correct / total_total if total_total else None)}"
+            f" ({total_correct}/{total_total}) |",
+            f"| Mean MAE (maps) | {_fmt_mae(avg_mae)} |",
+        ])
+
+    # ── Write results.md ──────────────────────────────────────────────────────
+    results_path = test_dir / "results.md"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sections = [f"# Evaluation Results\n\n_Generated: {timestamp}_\n"]
+    sections.extend(f"\n---\n\n{md}" for md in all_md)
+    if aggregate_md:
+        sections.append(f"\n---\n\n{aggregate_md}")
+
+    results_path.write_text("\n".join(sections) + "\n", encoding="utf-8")
+    print(f"\nResults saved to: {results_path}")
 
 
 if __name__ == "__main__":
