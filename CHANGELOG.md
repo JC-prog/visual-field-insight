@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.2] — 2026-03-12
+
+### Changed
+- Test case folders (`001/`, `002/`, …) moved from `test/` into a new `test_data/` directory at the project root. `test_data/` is gitignored so patient data is never committed.
+- `test/evaluate.py`: discovery now searches `test_data/` (project root) instead of `test/`; `results.md` continues to be written to `test/`.
+
+---
+
+## [1.4.1] — 2026-03-12
+
+### Changed
+- `scripts/build_portable.bat`: build artefacts are now cached in a `cache\` folder at the project root so they are not re-downloaded on every rebuild.
+  - Python embeddable zip (`python-3.12.10-embed-amd64.zip`) — downloaded once and reused from `cache\`.
+  - `get-pip.py` — downloaded once and reused from `cache\`.
+  - pip packages — `--no-cache-dir` replaced with `--cache-dir cache\pip`; downloaded wheels are reused across rebuilds.
+  - First build behaviour is unchanged; subsequent builds skip all three downloads.
+
+---
+
 ## [1.4.0] — 2026-03-10
 
 ### Added

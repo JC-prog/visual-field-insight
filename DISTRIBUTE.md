@@ -87,7 +87,9 @@ The script will:
 5. Create `dist\data\` with empty `input\` and `output\` folders
 6. Write `dist\run.bat`
 
-Build time is approximately **15–30 minutes** depending on internet speed. The output will be approximately **1.4 GB**.
+**Build cache:** Downloads are cached in a `cache\` folder at the project root. The Python embeddable zip, `get-pip.py`, and pip package wheels are reused on subsequent runs — only the first build requires a full download.
+
+First build: approximately **15–30 minutes** depending on internet speed. Subsequent rebuilds: significantly faster (mostly local copies). Output: approximately **1.4 GB**.
 
 ---
 
@@ -143,7 +145,7 @@ To update an existing installation on the target machine:
 Populate `models\` before running the build script. See Step 1.
 
 **pip install fails**
-Check that the build machine has internet access. Some packages are large — ensure there is enough disk space (at least 3 GB free during build).
+Check that the build machine has internet access. Some packages are large — ensure there is enough disk space (at least 3 GB free during build). If the `cache\pip` folder is corrupt, delete it and re-run the script to re-download.
 
 **`python312._pth` not found**
 The Python embeddable version must be exactly 3.12.x. If the download failed or the zip is corrupt, delete `dist\` and re-run the script.

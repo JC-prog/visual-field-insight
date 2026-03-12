@@ -44,8 +44,8 @@ visual-field-insight/
 ├── models/                 # Bundled PaddleOCR models (not in repo)
 ├── test/
 │   ├── evaluate.py         # OCR accuracy evaluation against ground truth files
-│   ├── run_eval.bat        # Run evaluation using dist Python
-│   └── <id>/               # Per-case folders with paired image + ground truth .md
+│   └── results.md          # Evaluation output (gitignored)
+├── test_data/              # Per-case folders: paired image + *_GT.csv (gitignored)
 ├── scripts/
 │   └── build_portable.bat  # Portable Windows build script
 └── requirements.txt
@@ -113,28 +113,30 @@ data/input/
 
 ### Evaluating OCR accuracy
 
-Place ground truth files alongside their paired images under `test/`:
+Place ground truth CSV files alongside their paired images under `test_data/`:
 
 ```
-test/
+test_data/
   001/
     001_HVF_LE.pdf
-    001_HVF_LE_ground_truth.md
+    001_HVF_LE_GT.csv
 ```
 
-Run via the dist Python (has all packages installed):
+Ground truth CSV naming: `<id>_<TEMPLATE>_<EYE>_GT.csv` (e.g. `001_HVF_LE_GT.csv` pairs with `001_HVF_LE.pdf`).
 
-```batch
-test\run_eval.bat
+Run from the project root:
+
+```bash
+python evaluate.py
 ```
 
-Or pass `--no-debug` to skip saving crop images:
+Pass `--no-debug` to skip saving crop images:
 
-```batch
-test\run_eval.bat --no-debug
+```bash
+python evaluate.py --no-debug
 ```
 
-Per-section accuracy and MAE are printed to the console. Debug images (original crop, gridline-removed crop, PaddleOCR bounding-box overlay) are saved to `test\debug_output\` by default.
+Per-section accuracy and MAE are printed to the console and saved to `test/results.md`. Debug images (original crop, gridline-removed crop, PaddleOCR bounding-box overlay) are saved to `test/<id>/debug_output/` alongside each test case.
 
 ---
 
@@ -174,7 +176,7 @@ To add a new template type, create a new `.json` file in `data/templates/` follo
 
 ## Portable Build (Offline Deployment)
 
-The target machine requires no Python installation. Run the build script once on an internet-connected machine:
+The target machine requires no Python installation. Run the build script on an internet-connected machine:
 
 ```batch
 scripts\build_portable.bat
@@ -182,4 +184,8 @@ scripts\build_portable.bat
 
 This produces a `dist\` folder (~1.4 GB) containing an embedded Python runtime, all dependencies, bundled OCR models, and a `run.bat` launcher. Copy the entire `dist\` folder to the target machine and double-click `run.bat`.
 
+Downloads are cached in `cache\` at the project root — the Python runtime, `get-pip.py`, and pip wheels are reused on subsequent rebuilds, so only the first build requires a full download.
+
 > **Prerequisites:** Populate `models\` with the PaddleOCR model cache before building. Run the app once locally so models are downloaded, then copy the cache into `models\`.
+
+See [DISTRIBUTE.md](DISTRIBUTE.md) for full build and delivery instructions.
