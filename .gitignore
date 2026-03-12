@@ -209,9 +209,11 @@ __marimo__/
 # Project-specific
 models/
 !models/.gitkeep
+cache/
 data/input/*
 !data/input/.gitkeep
 data/output/*
 !data/output/.gitkeep
 asset/*
-test/debug_output
+test_data/
+test/results.md

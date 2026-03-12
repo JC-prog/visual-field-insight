@@ -1,12 +1,7 @@
 {
     "LE": {
         "header": {
-            "crop_region": [
-                0,
-                552,
-                2485,
-                443
-            ],
+            "crop_region": [0,524,2485,471],
             "type": "text",
             "labels": [
                 "Fixation Monitor",
@@ -221,12 +216,7 @@
     },
     "RE": {
         "header": {
-            "crop_region": [
-                0,
-                552,
-                2485,
-                443
-            ],
+            "crop_region": [0,524,2485,471],
             "type": "text",
             "labels": [
                 "Fixation Monitor",
