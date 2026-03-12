@@ -26,6 +26,7 @@ set "ROOT=%CD%"
 popd
 set "DIST=%ROOT%\dist"
 set "APP=%DIST%\app"
+set "CACHE=%ROOT%\cache"
 set "PY_VERSION=3.12.10"
 set "PY_ZIP=python-%PY_VERSION%-embed-amd64.zip"
 set "PY_URL=https://www.python.org/ftp/python/%PY_VERSION%/%PY_ZIP%"
@@ -45,6 +46,10 @@ if not exist "%ROOT%\models\" (
     exit /b 1
 )
 
+REM --- Ensure cache folder exists ---
+if not exist "%CACHE%"            mkdir "%CACHE%"
+if not exist "%CACHE%\pip"        mkdir "%CACHE%\pip"
+
 REM --- Clean and create dist ---
 if exist "%DIST%" (
     echo Removing existing dist\...
@@ -54,21 +59,24 @@ mkdir "%DIST%"
 mkdir "%APP%"
 
 REM ---- Step 1: Download Python embeddable ----
-echo [1/6] Downloading Python %PY_VERSION% embeddable...
-curl -L -o "%APP%\%PY_ZIP%" "%PY_URL%"
-if errorlevel 1 (
-    echo ERROR: Failed to download Python embeddable. Check your connection.
-    pause
-    exit /b 1
+if exist "%CACHE%\%PY_ZIP%" (
+    echo [1/6] Using cached Python %PY_VERSION% embeddable...
+) else (
+    echo [1/6] Downloading Python %PY_VERSION% embeddable...
+    curl -L -o "%CACHE%\%PY_ZIP%" "%PY_URL%"
+    if errorlevel 1 (
+        echo ERROR: Failed to download Python embeddable. Check your connection.
+        pause
+        exit /b 1
+    )
 )
 mkdir "%APP%\python"
-tar -xf "%APP%\%PY_ZIP%" -C "%APP%\python"
+tar -xf "%CACHE%\%PY_ZIP%" -C "%APP%\python"
 if errorlevel 1 (
     echo ERROR: Failed to extract Python embeddable zip.
     pause
     exit /b 1
 )
-del "%APP%\%PY_ZIP%"
 
 REM ---- Step 2: Enable site-packages ----
 echo [2/6] Configuring embeddable Python...
@@ -81,15 +89,18 @@ if not exist "%PTH_FILE%" (
 powershell -Command "(Get-Content '%PTH_FILE%') -replace '#import site', 'import site' | Set-Content '%PTH_FILE%'"
 
 REM ---- Step 3: Install pip ----
-echo [3/6] Installing pip...
-curl -L -o "%APP%\get-pip.py" https://bootstrap.pypa.io/get-pip.py
-if errorlevel 1 (
-    echo ERROR: Failed to download get-pip.py.
-    pause
-    exit /b 1
+if exist "%CACHE%\get-pip.py" (
+    echo [3/6] Using cached get-pip.py...
+) else (
+    echo [3/6] Downloading get-pip.py...
+    curl -L -o "%CACHE%\get-pip.py" https://bootstrap.pypa.io/get-pip.py
+    if errorlevel 1 (
+        echo ERROR: Failed to download get-pip.py.
+        pause
+        exit /b 1
+    )
 )
-"%APP%\python\python.exe" "%APP%\get-pip.py" --no-warn-script-location
-del "%APP%\get-pip.py"
+"%APP%\python\python.exe" "%CACHE%\get-pip.py" --no-warn-script-location
 
 REM ---- Step 4: Install dependencies ----
 echo [4/6] Installing Python packages (this will take a while)...
@@ -100,7 +111,7 @@ powershell -Command ^
 
 "%APP%\python\python.exe" -m pip install -r "%APP%\requirements.txt" ^
     --no-warn-script-location ^
-    --no-cache-dir
+    --cache-dir "%CACHE%\pip"
 if errorlevel 1 (
     echo ERROR: Package installation failed.
     pause
