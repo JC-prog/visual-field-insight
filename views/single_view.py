@@ -106,7 +106,7 @@ def single_view():
             key="single_le_uploader",
         )
         if le_file and le_file.type != "application/pdf":
-            st.image(le_file, use_container_width=True)
+            st.image(le_file, width='stretch')
 
     with re_col:
         st.subheader("Right Eye (RE)")
@@ -116,7 +116,7 @@ def single_view():
             key="single_re_uploader",
         )
         if re_file and re_file.type != "application/pdf":
-            st.image(re_file, use_container_width=True)
+            st.image(re_file, width='stretch')
 
     # --- Run button ---
     if st.button("Run Extraction", type="primary"):
@@ -195,7 +195,7 @@ def single_view():
     )
 
     with st.expander("Preview"):
-        st.dataframe(pd.DataFrame(records), use_container_width=True)
+        st.dataframe(pd.DataFrame(records), width='stretch')
 
     # --- Debug panel ---
     debug_info = st.session_state.get("single_debug", {})
@@ -214,12 +214,12 @@ def single_view():
                             col_orig, col_proc = st.columns(2)
                             with col_orig:
                                 st.caption("Original crop")
-                                st.image(entry["crop"][:, :, ::-1], use_container_width=True)
+                                st.image(entry["crop"][:, :, ::-1], width='stretch')
                             with col_proc:
                                 st.caption("After gridline removal")
-                                st.image(entry["processed"][:, :, ::-1], use_container_width=True)
+                                st.image(entry["processed"][:, :, ::-1], width='stretch')
                         else:
-                            st.image(entry["crop"][:, :, ::-1], use_container_width=True)
+                            st.image(entry["crop"][:, :, ::-1], width='stretch')
 
                         st.code(entry["raw_text"] or "(no text detected)", language=None)
                         st.divider()

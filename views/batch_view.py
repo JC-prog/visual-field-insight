@@ -192,4 +192,4 @@ def batch_view():
     )
 
     with st.expander("Preview"):
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width='stretch')
