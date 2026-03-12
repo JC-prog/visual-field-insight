@@ -100,7 +100,13 @@ if exist "%CACHE%\get-pip.py" (
         exit /b 1
     )
 )
-"%APP%\python\python.exe" "%CACHE%\get-pip.py" --no-warn-script-location
+"%APP%\python\python.exe" "%CACHE%\get-pip.py" --no-warn-script-location ^
+    --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host bootstrap.pypa.io
+
+REM ---- Step 3b: Upgrade pip to latest ----
+"%APP%\python\python.exe" -m pip install --upgrade pip ^
+    --cache-dir "%CACHE%\pip" --no-warn-script-location ^
+    --trusted-host pypi.org --trusted-host files.pythonhosted.org
 
 REM ---- Step 4: Install dependencies ----
 echo [4/6] Installing Python packages (this will take a while)...
@@ -111,7 +117,8 @@ powershell -Command ^
 
 "%APP%\python\python.exe" -m pip install -r "%APP%\requirements.txt" ^
     --no-warn-script-location ^
-    --cache-dir "%CACHE%\pip"
+    --cache-dir "%CACHE%\pip" ^
+    --trusted-host pypi.org --trusted-host files.pythonhosted.org
 if errorlevel 1 (
     echo ERROR: Package installation failed.
     pause
