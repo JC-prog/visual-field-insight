@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Evaluate OCR accuracy against ground truth files in test_data/.
+Evaluate OCR accuracy against ground truth files in test/test_data/.
 
 Usage:
     python evaluate.py
@@ -22,7 +22,7 @@ CSV format:
     ...
 
 Results are written to test/results.md after each run.
-Debug images are saved to <case_folder>/debug_output/ per case.
+Debug images and raw OCR text are saved to <case_folder>/debug_output/ per case.
 """
 import csv
 import json
@@ -409,7 +409,11 @@ def evaluate_file(gt_path: Path, save_debug: bool = True) -> tuple[dict | None, 
             ocr_res = entry.get("ocr_result")
             if ocr_res is not None:
                 ocr_res.save_to_img(str(debug_dir / f"{stem}_{sec}_ocr.png"))
-        print(f"  Debug images saved to: {debug_dir}/")
+            raw_text = entry.get("raw_text", "")
+            (debug_dir / f"{stem}_{sec}_raw.txt").write_text(raw_text, encoding="utf-8")
+        normalized_lines = "\n".join(f"{k}: {v}" for k, v in sorted(ocr_result.items()))
+        (debug_dir / f"{stem}_normalized.txt").write_text(normalized_lines, encoding="utf-8")
+        print(f"  Debug output saved to: {debug_dir}/")
 
     metrics = compute_metrics(ocr_result, gt_result, template_full[eye])
 
@@ -439,17 +443,31 @@ def main() -> None:
         action="store_true",
         help="Disable saving debug images to <case>/debug_output/.",
     )
+    parser.add_argument(
+        "--file",
+        metavar="GT_CSV",
+        help="Evaluate a single ground truth CSV file instead of all files in test_data/.",
+    )
     args = parser.parse_args()
 
     test_dir = Path(__file__).resolve().parent
-    data_dir = test_dir.parent / "test_data"
+    data_dir = test_dir / "test_data"
 
-    gt_files = sorted(data_dir.rglob("*_GT.csv"))
-    if not gt_files:
-        print(f"No ground truth files found under {data_dir}")
-        sys.exit(1)
+    if args.file:
+        gt_path = Path(args.file)
+        if not gt_path.is_absolute():
+            gt_path = Path.cwd() / gt_path
+        if not gt_path.exists():
+            print(f"File not found: {gt_path}")
+            sys.exit(1)
+        gt_files = [gt_path]
+    else:
+        gt_files = sorted(data_dir.rglob("*_GT.csv"))
+        if not gt_files:
+            print(f"No ground truth files found under {data_dir}")
+            sys.exit(1)
 
-    print(f"Found {len(gt_files)} ground truth file(s) in {data_dir}")
+    print(f"Found {len(gt_files)} ground truth file(s) in {data_dir if not args.file else gt_files[0].parent}")
 
     all_metrics: list[dict] = []
     all_md: list[str] = []
