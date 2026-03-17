@@ -21,7 +21,8 @@ def normalize_header_data(raw_data: str, template_labels: List[str]) -> Dict[str
     normalized = {}
     i = 0
     while i < len(tokens):
-        candidate = tokens[i].rstrip(':').strip()
+        token = tokens[i]
+        candidate = token.rstrip(':').strip()
         if candidate in label_set:
             if i + 1 < len(tokens) and tokens[i + 1].rstrip(':').strip() not in label_set:
                 normalized[candidate] = tokens[i + 1]
@@ -30,6 +31,14 @@ def normalize_header_data(raw_data: str, template_labels: List[str]) -> Dict[str
                 normalized[candidate] = ""
                 i += 1
         else:
+            # Handle merged "LABEL: value" tokens (e.g. "VFI: 99.24%", "MD: -1.32 dB")
+            # that PaddleOCR returns as a single detection block.
+            colon_idx = token.find(':')
+            if colon_idx != -1:
+                left = token[:colon_idx].strip()
+                right = token[colon_idx + 1:].strip()
+                if left in label_set and right:
+                    normalized[left] = right
             i += 1
 
     for label in template_labels:
