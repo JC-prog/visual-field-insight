@@ -12,7 +12,7 @@
             ]
         },
         "test_details": {
-            "crop_region": [0, 181, 1410, 190],
+            "crop_region": [0, 168, 1413, 219],
             "type": "text",
             "labels": [
                 "Eye",
@@ -94,7 +94,7 @@
             ]
         },
         "test_details": {
-            "crop_region": [0, 181, 1410, 190],
+            "crop_region": [0, 168, 1413, 219],
             "type": "text",
             "labels": [
                 "Eye",

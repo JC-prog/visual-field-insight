@@ -44,8 +44,8 @@ visual-field-insight/
 ├── models/                 # Bundled PaddleOCR models (not in repo)
 ├── test/
 │   ├── evaluate.py         # OCR accuracy evaluation against ground truth files
-│   └── results.md          # Evaluation output (gitignored)
-├── test_data/              # Per-case folders: paired image + *_GT.csv (gitignored)
+│   ├── results.md          # Evaluation output (gitignored)
+│   └── test_data/          # Per-case folders: paired image + *_GT.csv (gitignored)
 ├── scripts/
 │   └── build_portable.bat  # Portable Windows build script
 └── requirements.txt
@@ -113,10 +113,10 @@ data/input/
 
 ### Evaluating OCR accuracy
 
-Place ground truth CSV files alongside their paired images under `test_data/`:
+Place ground truth CSV files alongside their paired images under `test/test_data/`:
 
 ```
-test_data/
+test/test_data/
   001/
     001_HVF_LE.pdf
     001_HVF_LE_GT.csv
@@ -127,16 +127,23 @@ Ground truth CSV naming: `<id>_<TEMPLATE>_<EYE>_GT.csv` (e.g. `001_HVF_LE_GT.csv
 Run from the project root:
 
 ```bash
-python evaluate.py
+python test/evaluate.py
 ```
 
-Pass `--no-debug` to skip saving crop images:
+Pass `--no-debug` to skip saving debug output:
 
 ```bash
-python evaluate.py --no-debug
+python test/evaluate.py --no-debug
 ```
 
-Per-section accuracy and MAE are printed to the console and saved to `test/results.md`. Debug images (original crop, gridline-removed crop, PaddleOCR bounding-box overlay) are saved to `test/<id>/debug_output/` alongside each test case.
+Per-section accuracy and MAE are printed to the console and saved to `test/results.md`. The following debug files are saved to `test/test_data/<id>/debug_output/` per section:
+
+| File | Description |
+|---|---|
+| `<stem>_<section>_before.png` | Original crop |
+| `<stem>_<section>_after.png` | Gridline-removed crop |
+| `<stem>_<section>_ocr.png` | PaddleOCR bounding-box overlay |
+| `<stem>_<section>_raw.txt` | Raw OCR text as returned by PaddleOCR |
 
 ---
 
